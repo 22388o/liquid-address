@@ -60,3 +60,32 @@ common ownership becomes obvious.
 ** ♊ Similar Projects
 - [[https://npub.cash][npub.cash]]: A Lightning-Address powered by *eCash* and nostr
 - [[https://github.com/Kodylow/hermes][Hermes]]: A Lightning Address Messenger with *Fedimint*
+
+** Sequence Diagram
+[[./diagram.png]]
+#+begin_src plantuml
+@startuml
+actor Payer as payer
+participant "Lipa Server" as server
+participant "Boltz Exchange" as boltz
+participant "Liquid Network" as liquid
+
+activate payer
+payer -> server ++: request invoice
+server -> server: generate **preimage**,\nhash it to **hash**
+server -> boltz ++: init swap with **hash**
+return **swap_id**
+server -> payer: **invoice**
+
+payer -> boltz ++: send **HTLC**
+boltz --> liquid: publish **swap** tx
+
+liquid --> server: observe **swap** tx
+server --> liquid: publish **claim** tx\nwith **preimage**
+deactivate server
+
+liquid --> boltz: observe **claim** tx
+boltz -> boltz: extract **preimage**
+boltz -> payer: settle **HTLC**
+@enduml
+#+end_src
